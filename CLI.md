@@ -31,6 +31,8 @@ Or pass it directly to commands:
 gemini-cli generate "Hello" --api-key "your-api-key"
 ```
 
+**Note**: All commands support the `--api-key` option for direct API key specification.
+
 ## Commands
 
 ### generate
@@ -47,6 +49,8 @@ Options:
 - `-m, --max-tokens`: Maximum output tokens
 - `--format`: Output format (text/json)
 
+**Status**: ✅ Working
+
 ### stream
 Stream content generation in real-time.
 
@@ -54,10 +58,7 @@ Stream content generation in real-time.
 gemini-cli stream "Your prompt here" [options]
 ```
 
-**Known Issue**: JSON decoding error when parsing streaming chunks
-- **Problem**: The streaming response format differs from expected structure
-- **Debug**: Run with verbose output to see raw response: `gemini-cli stream "prompt" 2>&1`
-- **Workaround**: Use non-streaming `generate` command instead
+**Status**: ✅ Working - Uses process-based cURL on Linux for true SSE streaming
 
 ### count
 Count tokens in text.
@@ -65,6 +66,8 @@ Count tokens in text.
 ```bash
 gemini-cli count "Text to count tokens"
 ```
+
+**Status**: ✅ Working
 
 ### chat
 Interactive chat session.
@@ -77,6 +80,13 @@ Options:
 - `--model`: Model to use
 - `-s, --system`: System instruction
 
+**Status**: ✅ Working (requires TTY for interactive mode)
+
+**Note**: For scripted use, pipe input through stdin:
+```bash
+echo "Your message" | gemini-cli chat
+```
+
 ### embeddings
 Generate text embeddings.
 
@@ -86,6 +96,8 @@ gemini-cli embeddings "Text to embed" [options]
 
 Options:
 - `--model`: Embedding model (default: text-embedding-004)
+
+**Status**: ✅ Working
 
 ### generate-image
 Generate images from text prompts.
@@ -100,6 +112,8 @@ Options:
 - `-r, --ratio`: Aspect ratio (1:1, 16:9, 9:16, 4:3)
 - `-o, --output`: Output directory
 
+**Status**: ✅ Working
+
 ### generate-speech
 Generate speech from text.
 
@@ -112,12 +126,16 @@ Options:
 - `-v, --voice`: Voice name (default: Zephyr)
 - `-o, --output`: Output file path
 
+**Status**: ✅ Working
+
 ### code-execution
 Execute code with AI assistance.
 
 ```bash
 gemini-cli code-execution "Code task description"
 ```
+
+**Status**: ✅ Working
 
 ### web-grounding
 Search the web for current information.
@@ -126,6 +144,8 @@ Search the web for current information.
 gemini-cli web-grounding "Search query"
 ```
 
+**Status**: ✅ Working
+
 ### function-call
 Test function calling capabilities.
 
@@ -133,10 +153,11 @@ Test function calling capabilities.
 gemini-cli function-call "Task requiring function calls"
 ```
 
-**Known Issue**: Calculator function parameter validation fails
-- **Problem**: The function calling example expects specific parameter format
-- **Debug**: The calculator only supports expressions like "2 + 2", not natural language
-- **Workaround**: Use direct arithmetic expressions or implement custom functions
+**Status**: ✅ Working
+
+Built-in functions:
+- **Calculator**: Performs arithmetic operations (add, subtract, multiply, divide)
+- **Weather**: Returns mock weather data for any location
 
 ### open-ai-chat
 OpenAI-compatible chat completion.
@@ -150,6 +171,8 @@ Options:
 - `-t, --temperature`: Temperature
 - `-m, --max-tokens`: Maximum tokens
 
+**Status**: ✅ Working
+
 ### File Operations
 
 #### upload
@@ -159,10 +182,10 @@ Upload a file for processing.
 gemini-cli upload <file-path>
 ```
 
-**Known Issue**: File upload API endpoint not accessible
-- **Problem**: The upload endpoint returns 404 or permission denied
-- **Debug**: Check API response: `gemini-cli upload file.txt 2>&1`
-- **Note**: File uploads may require additional API permissions or different endpoint
+**Status**: ❌ Not Working
+- **Issue**: Returns "Failed to get upload URL"
+- **Reason**: The Gemini API file upload requires different authentication or API configuration
+- **Note**: This appears to be an API limitation rather than an SDK issue
 
 #### list-files
 List uploaded files.
@@ -171,12 +194,16 @@ List uploaded files.
 gemini-cli list-files
 ```
 
+**Status**: ✅ Working (returns empty list as no files can be uploaded)
+
 #### delete-file
 Delete an uploaded file.
 
 ```bash
 gemini-cli delete-file <file-name>
 ```
+
+**Status**: ⚠️ Untested (requires working file upload)
 
 ### config-info
 Display available models and configuration.
@@ -185,51 +212,139 @@ Display available models and configuration.
 gemini-cli config-info
 ```
 
+**Status**: ✅ Working
+
 ## Examples
 
 ### Basic text generation
 ```bash
 gemini-cli generate "Explain quantum computing"
+# Output: Quantum computing harnesses the principles of quantum mechanics...
 ```
 
 ### JSON output
 ```bash
 gemini-cli generate "List 3 benefits of Swift" --format json
+# Output: {"response":"1. Type safety..."}
 ```
 
 ### With system instruction
 ```bash
 gemini-cli generate "Explain Docker" -s "You are a DevOps expert"
+# Output: As a DevOps expert, I can tell you that Docker is...
+```
+
+### Streaming responses
+```bash
+gemini-cli stream "Write a haiku about programming"
+# Output: Code flows line by line,
+#         Bugs appear, then they are fixed,
+#         New worlds start to live.
+```
+
+### Count tokens
+```bash
+gemini-cli count "This is a test text to count tokens"
+# Output: Total tokens: 9
+```
+
+### Generate embeddings
+```bash
+gemini-cli embeddings "Hello world"
+# Output: Embedding dimensions: 768
+#         First 10 values: 0.0132, -0.0087, -0.0468...
 ```
 
 ### Generate multiple images
 ```bash
-gemini-cli generate-image "A sunset over mountains" -c 4 -r 16:9
+gemini-cli generate-image "A sunset over mountains" -c 4 -r 16:9 -o ./images
+# Output: Images saved:
+#         - ./images/image_1.png
+#         - ./images/image_2.png
+#         - ./images/image_3.png
+#         - ./images/image_4.png
 ```
 
 ### Text-to-speech with custom voice
 ```bash
 gemini-cli generate-speech "Hello world" -v Lyra -o speech.wav
+# Output: Audio saved to: speech.wav
+```
+
+### Code execution
+```bash
+gemini-cli code-execution "Write a Python script that calculates fibonacci numbers"
+# Output: [Complete Python script with fibonacci implementation]
 ```
 
 ### Web search
 ```bash
-gemini-cli web-grounding "Latest Swift features"
+gemini-cli web-grounding "What is the latest version of Swift?"
+# Output: The latest stable version of Swift is 6.1.2...
+#         Web searches:
+#         - latest stable version of Swift
+#         Sources:
+#         - wikipedia.org: https://...
+#         - swift.org: https://...
 ```
 
-## Known Issues Summary
+### Function calling
+```bash
+gemini-cli function-call "Calculate 15 times 27"
+# Output: The result of multiplying 15 and 27 is 405.
 
-1. **stream command**: JSON parsing errors due to SSE format differences
-2. **function-call command**: Limited to basic calculator operations
-3. **upload command**: File API endpoint access issues
-4. **chat command**: Interactive mode requires TTY (not tested in scripts)
+gemini-cli function-call "What's the weather in Tokyo?"
+# Output: The weather in Tokyo is rainy with a temperature of 60 degrees...
+```
+
+### OpenAI-compatible chat
+```bash
+gemini-cli open-ai-chat "Hello, how are you?"
+# Output: Hello! I am functioning perfectly and ready to assist you...
+#         ---
+#         Tokens - Prompt: 7, Completion: 24, Total: 31
+```
+
+## Command Status Summary
+
+| Command | Status | Notes |
+|---------|--------|-------|
+| generate | ✅ Working | Full text generation with all options |
+| stream | ✅ Working | True SSE streaming via cURL on Linux |
+| count | ✅ Working | Token counting |
+| chat | ✅ Working | Interactive mode requires TTY |
+| embeddings | ✅ Working | Text embeddings generation |
+| generate-image | ✅ Working | Image generation with multiple options |
+| generate-speech | ✅ Working | Text-to-speech with voice selection |
+| code-execution | ✅ Working | AI-assisted code generation |
+| web-grounding | ✅ Working | Web search integration |
+| function-call | ✅ Working | Function calling with calculator and weather |
+| open-ai-chat | ✅ Working | OpenAI-compatible interface |
+| config-info | ✅ Working | Model and configuration display |
+| list-files | ✅ Working | Lists uploaded files (empty) |
+| upload | ❌ Not Working | API limitation - "Failed to get upload URL" |
+| delete-file | ⚠️ Untested | Requires working file upload |
+
+## Architecture Notes
+
+### Linux Streaming Implementation
+On Linux, the SDK uses a process-based cURL implementation for true SSE streaming support:
+- Spawns a cURL process with `-N` flag for no buffering
+- Reads output incrementally from the process pipe
+- Parses SSE events in real-time with proper buffering
+- Thread-safe handling using Swift actors
+
+### Platform Differences
+- **macOS/iOS**: Uses native URLSession streaming
+- **Linux**: Uses cURL process for true streaming (URLSession on Linux doesn't support streaming)
 
 ## Debugging Tips
 
 - Redirect stderr to see full error details: `command 2>&1`
 - Use `--help` on any command for detailed options
 - Check the API reference file for endpoint specifications
-- Enable verbose logging by setting `GEMINI_DEBUG=true`
+- Enable verbose logging by setting `GEMINI_DEBUG=true` (currently minimal debug output)
+- On Linux, the SDK uses a process-based cURL implementation for true SSE streaming support
 
 ## Exit Codes
 
