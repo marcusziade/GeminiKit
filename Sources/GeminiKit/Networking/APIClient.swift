@@ -70,16 +70,40 @@ public final class APIClient: @unchecked Sendable {
                 
                 // Check response
                 if let httpResponse = response as? HTTPURLResponse ?? response as? HTTPURLResponse {
-                    if httpResponse.statusCode == 429 {
+                    switch httpResponse.statusCode {
+                    case 200...299:
+                        // Success
+                        break
+                    case 401:
+                        throw GeminiError.authenticationFailed("Invalid or expired API key")
+                    case 403:
+                        throw GeminiError.authenticationFailed("API key lacks required permissions")
+                    case 404:
+                        if endpoint.contains("/models/") {
+                            let modelName = endpoint.split(separator: "/").last.map(String.init) ?? "unknown"
+                            throw GeminiError.modelNotFound(modelName)
+                        } else {
+                            throw GeminiError.invalidRequest("Endpoint not found: \(endpoint)")
+                        }
+                    case 429:
                         throw GeminiError.rateLimitExceeded
-                    } else if httpResponse.statusCode >= 400 {
+                    case 503:
+                        throw GeminiError.networkError("Service temporarily unavailable")
+                    default:
                         // Try to parse error response
                         if let errorResponse = try? decoder.decode(ErrorResponse.self, from: data) {
-                            throw GeminiError.apiError(
-                                code: httpResponse.statusCode,
-                                message: errorResponse.error.message,
-                                details: errorResponse.error.details?.description
-                            )
+                            // Check for specific error types
+                            if errorResponse.error.message.contains("quota") {
+                                throw GeminiError.quotaExceeded
+                            } else if errorResponse.error.message.contains("model") {
+                                throw GeminiError.invalidModel(errorResponse.error.message)
+                            } else {
+                                throw GeminiError.apiError(
+                                    code: httpResponse.statusCode,
+                                    message: errorResponse.error.message,
+                                    details: errorResponse.error.details?.description
+                                )
+                            }
                         } else {
                             throw GeminiError.apiError(
                                 code: httpResponse.statusCode,
