@@ -20,6 +20,10 @@ The SDK follows Swift best practices with protocol-oriented design, comprehensiv
 
 ## Topics
 
+### Tutorials
+
+- <doc:GeminiKit-Tutorials>
+
 ### Getting Started
 
 - <doc:GettingStarted>
@@ -64,7 +68,7 @@ The SDK follows Swift best practices with protocol-oriented design, comprehensiv
 - <doc:OpenAICompatibility>
 - <doc:MigratingFromOpenAI>
 
-### Configuration
+### Configuration & Error Handling
 
 - <doc:ConfigurationOptions>
 - <doc:SafetySettings>
