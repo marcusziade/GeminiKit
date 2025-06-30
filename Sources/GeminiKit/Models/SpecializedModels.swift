@@ -87,17 +87,20 @@ public struct VeoParameters: Codable, Equatable, Sendable {
     public let personGeneration: String?
     public let numberOfVideos: Int?
     public let durationSeconds: Int?
+    public let enhancePrompt: Bool?
     
     public init(
         aspectRatio: String? = "16:9",
         personGeneration: String? = nil,
         numberOfVideos: Int? = 1,
-        durationSeconds: Int? = 5
+        durationSeconds: Int? = 5,
+        enhancePrompt: Bool? = true
     ) {
         self.aspectRatio = aspectRatio
         self.personGeneration = personGeneration
         self.numberOfVideos = numberOfVideos
         self.durationSeconds = durationSeconds
+        self.enhancePrompt = enhancePrompt
     }
 }
 

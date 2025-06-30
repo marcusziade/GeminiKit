@@ -140,12 +140,23 @@ extension GeminiKit {
         )
         
         let endpoint = "/models/\(model.rawValue):predictLongRunning"
-        let response: VeoPredictResponse = try await apiClient.request(
-            endpoint: endpoint,
-            body: request
-        )
         
-        return response.name
+        do {
+            let response: VeoPredictResponse = try await apiClient.request(
+                endpoint: endpoint,
+                body: request
+            )
+            return response.name
+        } catch {
+            // Try alternative response format
+            if let operation: Operation = try? await apiClient.request(
+                endpoint: endpoint,
+                body: request
+            ) {
+                return operation.name
+            }
+            throw error
+        }
     }
     
     /// Checks the status of a video generation operation

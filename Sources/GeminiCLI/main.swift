@@ -18,6 +18,7 @@ struct GeminiCLI: AsyncParsableCommand {
             DeleteFile.self,
             GenerateImage.self,
             GenerateVideo.self,
+            AnalyzeVideo.self,
             GenerateSpeech.self,
             Embeddings.self,
             FunctionCall.self,
@@ -402,6 +403,99 @@ struct GenerateVideo: AsyncParsableCommand {
                 if let uri = video.video?.uri {
                     print("- Video \(index + 1): \(uri)")
                 }
+            }
+        }
+    }
+}
+
+// MARK: - Video Analysis
+
+struct AnalyzeVideo: AsyncParsableCommand {
+    static let configuration = CommandConfiguration(
+        abstract: "Analyze video content"
+    )
+    
+    @OptionGroup var common: CommonOptions
+    
+    @Argument(help: "Path to video file or YouTube URL")
+    var video: String
+    
+    @Option(name: .shortAndLong, help: "Analysis prompt")
+    var prompt: String = "Please describe this video in detail."
+    
+    @Option(help: "System instruction")
+    var system: String?
+    
+    @Option(help: "Start time (MM:SS format)")
+    var start: String?
+    
+    @Option(help: "End time (MM:SS format)")
+    var end: String?
+    
+    @Option(help: "Frames per second (default: 1)")
+    var fps: Double?
+    
+    @Flag(help: "Transcribe audio and provide visual descriptions")
+    var transcribe = false
+    
+    mutating func run() async throws {
+        let gemini = try common.createGeminiKit()
+        let model = try common.getModel()
+        
+        var parts: [Part] = []
+        
+        // Check if it's a YouTube URL
+        if video.starts(with: "https://www.youtube.com/") || video.starts(with: "https://youtu.be/") {
+            // Use YouTube URL directly
+            parts.append(.fileData(FileData(
+                mimeType: "video/*",
+                fileUri: video
+            )))
+        } else {
+            // Upload local video file
+            let videoURL = URL(fileURLWithPath: video)
+            print("Uploading video file...")
+            
+            let file = try await gemini.uploadFile(from: videoURL)
+            print("Video uploaded: \(file.name)")
+            
+            // Wait a moment for processing
+            try await Task.sleep(nanoseconds: 2_000_000_000)
+            
+            parts.append(.fileData(FileData(
+                mimeType: file.mimeType,
+                fileUri: file.uri ?? ""
+            )))
+        }
+        
+        // Add video metadata if specified
+        if start != nil || end != nil || fps != nil {
+            parts.append(.videoMetadata(VideoMetadata(
+                startOffset: start,
+                endOffset: end,
+                fps: fps
+            )))
+        }
+        
+        // Add the analysis prompt
+        let analysisPrompt = transcribe ? 
+            "\(prompt)\n\nPlease also transcribe the audio from this video, giving timestamps for salient events. Also provide visual descriptions." :
+            prompt
+        parts.append(.text(analysisPrompt))
+        
+        let content = Content(role: .user, parts: parts)
+        
+        print("Analyzing video...")
+        
+        let response = try await gemini.generateContent(
+            model: model,
+            messages: [content],
+            systemInstruction: system
+        )
+        
+        if let text = response.candidates?.first?.content.parts.first {
+            if case .text(let analysis) = text {
+                print("\n" + analysis)
             }
         }
     }
