@@ -321,8 +321,9 @@ gemini-cli generate-image "Abstract representation of artificial intelligence" \
 
 ## Documentation
 
+- **[API Documentation](https://marcusziade.github.io/GeminiKit/documentation/geminikit/)** - Full SDK API reference (DocC)
 - **[CLI Complete Guide](CLI_GUIDE.md)** - Comprehensive CLI documentation with all commands, options, and examples
-- **[API Documentation](Sources/GeminiKit/Documentation.docc)** - Full SDK API reference
+- **[CLI Quick Reference](CLI_QUICK_REFERENCE.md)** - Quick command reference card
 - **[Test Script](test-all-commands.sh)** - Example script demonstrating all CLI commands
 
 ## Advanced Features
@@ -420,6 +421,10 @@ do {
     // Handle other errors
 }
 ```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 

@@ -1,0 +1,59 @@
+name: DocC
+
+on:
+  push:
+    branches: [ "master" ]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: macos-14
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Select Xcode
+      run: sudo xcode-select -s /Applications/Xcode_15.2.app
+    
+    - name: Resolve Package Dependencies
+      run: |
+        xcodebuild -resolvePackageDependencies \
+          -scheme GeminiKit \
+          -derivedDataPath /tmp/docbuild
+    
+    - name: Build Documentation
+      run: |
+        xcodebuild docbuild \
+          -scheme GeminiKit \
+          -derivedDataPath /tmp/docbuild \
+          -destination 'platform=macOS'
+    
+    - name: Process Documentation Archive
+      run: |
+        xcrun docc process-archive transform-for-static-hosting \
+          /tmp/docbuild/Build/Products/Debug/GeminiKit.doccarchive \
+          --output-path docs \
+          --hosting-base-path GeminiKit
+    
+    - name: Create Landing Page
+      run: |
+        swift Scripts/create_docs_index.swift
+    
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: 'docs'
+    
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
