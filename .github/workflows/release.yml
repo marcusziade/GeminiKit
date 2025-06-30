@@ -16,19 +16,19 @@ jobs:
       run: sudo xcode-select -s /Applications/Xcode_15.2.app
     
     - name: Build Release
-      run: swift build -c release
+      run: swift build -c release --product gemini-cli
     
     - name: Create macOS binary
       run: |
-        cp .build/release/deepseek-cli ./deepseek-cli-macos
-        chmod +x ./deepseek-cli-macos
-        tar -czf deepseek-cli-macos.tar.gz deepseek-cli-macos
+        cp .build/release/gemini-cli ./gemini-cli-macos
+        chmod +x ./gemini-cli-macos
+        tar -czf gemini-cli-macos.tar.gz gemini-cli-macos
     
     - name: Upload macOS artifact
       uses: actions/upload-artifact@v4
       with:
-        name: deepseek-cli-macos
-        path: deepseek-cli-macos.tar.gz
+        name: gemini-cli-macos
+        path: gemini-cli-macos.tar.gz
 
   build-linux:
     name: Build Linux Release
@@ -44,19 +44,19 @@ jobs:
         apt-get install -y curl libcurl4-openssl-dev
     
     - name: Build Release
-      run: swift build -c release
+      run: swift build -c release --product gemini-cli
     
     - name: Create Linux binary
       run: |
-        cp .build/release/deepseek-cli ./deepseek-cli-linux
-        chmod +x ./deepseek-cli-linux
-        tar -czf deepseek-cli-linux.tar.gz deepseek-cli-linux
+        cp .build/release/gemini-cli ./gemini-cli-linux
+        chmod +x ./gemini-cli-linux
+        tar -czf gemini-cli-linux.tar.gz gemini-cli-linux
     
     - name: Upload Linux artifact
       uses: actions/upload-artifact@v4
       with:
-        name: deepseek-cli-linux
-        path: deepseek-cli-linux.tar.gz
+        name: gemini-cli-linux
+        path: gemini-cli-linux.tar.gz
 
   create-release:
     name: Create GitHub Release
@@ -75,8 +75,8 @@ jobs:
       with:
         name: ${{ github.ref_name }}
         files: |
-          deepseek-cli-macos/deepseek-cli-macos.tar.gz
-          deepseek-cli-linux/deepseek-cli-linux.tar.gz
+          gemini-cli-macos/gemini-cli-macos.tar.gz
+          gemini-cli-linux/gemini-cli-linux.tar.gz
         generate_release_notes: true
         draft: false
         prerelease: false

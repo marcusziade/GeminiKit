@@ -32,9 +32,14 @@ dependencies: [
 swift build -c release --product gemini-cli
 cp .build/release/gemini-cli /usr/local/bin/
 
-# Or use the release binary
-curl -L https://github.com/marcusziade/GeminiKit/releases/latest/download/gemini-cli -o /usr/local/bin/gemini-cli
-chmod +x /usr/local/bin/gemini-cli
+# Or download the release binary
+# macOS:
+curl -L https://github.com/marcusziade/GeminiKit/releases/latest/download/gemini-cli-macos.tar.gz | tar xz
+sudo mv gemini-cli-macos /usr/local/bin/gemini-cli
+
+# Linux:
+curl -L https://github.com/marcusziade/GeminiKit/releases/latest/download/gemini-cli-linux.tar.gz | tar xz
+sudo mv gemini-cli-linux /usr/local/bin/gemini-cli
 ```
 
 ## Quick Start
