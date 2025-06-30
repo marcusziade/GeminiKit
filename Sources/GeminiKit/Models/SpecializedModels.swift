@@ -175,7 +175,7 @@ public struct SpeechGenerationRequest: Codable, Equatable, Sendable {
 /// Speech generation config
 public struct SpeechGenerationConfig: Codable, Equatable, Sendable {
     public let speechConfig: SpeechConfig
-    public let responseModalities: [ResponseModality] = [.audio]
+    public var responseModalities: [ResponseModality] = [.audio]
     
     public init(speechConfig: SpeechConfig) {
         self.speechConfig = speechConfig

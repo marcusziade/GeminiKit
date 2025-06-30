@@ -104,10 +104,10 @@ public final class Chat: @unchecked Sendable {
             )
         )
         
-        var fullResponseParts: [Part] = []
-        
         return AsyncThrowingStream { continuation in
             Task {
+                var fullResponseParts: [Part] = []
+                
                 do {
                     for try await response in responseStream {
                         if let candidate = response.candidates?.first,

@@ -1,4 +1,4 @@
-import Foundation
+@preconcurrency import Foundation
 
 /// Configuration for the Gemini API client
 public struct GeminiConfiguration: Sendable {

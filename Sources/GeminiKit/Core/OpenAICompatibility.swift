@@ -46,7 +46,7 @@ extension GeminiKit {
         }
         
         // Convert tools
-        let tools = try request.tools?.map { tool in
+        let tools = request.tools?.map { tool in
             Tool.functionDeclarations([FunctionDeclaration(
                 name: tool.function.name,
                 description: tool.function.description ?? "",
@@ -437,7 +437,8 @@ extension GeminiKit {
     
     private func extractRequired(_ params: [String: AnyCodable]?) -> [String]? {
         guard let params = params,
-              let required = params["required"] as? [String] else {
+              let requiredValue = params["required"],
+              let required = requiredValue.value as? [String] else {
             return nil
         }
         return required

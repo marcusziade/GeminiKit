@@ -175,7 +175,7 @@ public final class GeminiKit: @unchecked Sendable {
         systemInstruction: String? = nil,
         config: GenerationConfig? = nil
     ) async throws -> GenerateContentResponse {
-        var contents = [Content.user(prompt)]
+        let contents = [Content.user(prompt)]
         
         let request = GenerateContentRequest(
             contents: contents,
