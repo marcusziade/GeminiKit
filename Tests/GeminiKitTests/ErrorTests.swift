@@ -13,13 +13,13 @@ final class ErrorTests: XCTestCase {
         }
     }
     
-    func testUnauthorizedError() {
-        let error = GeminiError.unauthorized
+    func testInvalidAPIKeyError() {
+        let error = GeminiError.invalidAPIKey
         
-        if case .unauthorized = error {
+        if case .invalidAPIKey = error {
             // Success
         } else {
-            XCTFail("Expected unauthorized error")
+            XCTFail("Expected invalidAPIKey error")
         }
     }
     
@@ -33,13 +33,13 @@ final class ErrorTests: XCTestCase {
         }
     }
     
-    func testModelNotFoundError() {
-        let error = GeminiError.modelNotFound
+    func testTimeoutError() {
+        let error = GeminiError.timeout
         
-        if case .modelNotFound = error {
+        if case .timeout = error {
             // Success
         } else {
-            XCTFail("Expected modelNotFound error")
+            XCTFail("Expected timeout error")
         }
     }
     
@@ -47,37 +47,35 @@ final class ErrorTests: XCTestCase {
         let error = GeminiError.apiError(
             code: 500,
             message: "Internal server error",
-            details: ["reason": "database_error"]
+            details: "database_error"
         )
         
         if case .apiError(let code, let message, let details) = error {
             XCTAssertEqual(code, 500)
             XCTAssertEqual(message, "Internal server error")
-            XCTAssertEqual(details?["reason"] as? String, "database_error")
+            XCTAssertEqual(details, "database_error")
         } else {
             XCTFail("Expected apiError")
         }
     }
     
     func testNetworkError() {
-        let underlyingError = NSError(domain: "test", code: -1, userInfo: nil)
-        let error = GeminiError.networkError(underlyingError)
+        let error = GeminiError.networkError("Connection failed")
         
-        if case .networkError(let err) = error {
-            XCTAssertEqual((err as NSError).domain, "test")
-            XCTAssertEqual((err as NSError).code, -1)
+        if case .networkError(let message) = error {
+            XCTAssertEqual(message, "Connection failed")
         } else {
             XCTFail("Expected networkError")
         }
     }
     
-    func testDecodingError() {
-        let error = GeminiError.decodingError("Invalid JSON")
+    func testInvalidResponseError() {
+        let error = GeminiError.invalidResponse("Invalid JSON")
         
-        if case .decodingError(let message) = error {
+        if case .invalidResponse(let message) = error {
             XCTAssertEqual(message, "Invalid JSON")
         } else {
-            XCTFail("Expected decodingError")
+            XCTFail("Expected invalidResponse")
         }
     }
     
@@ -91,60 +89,50 @@ final class ErrorTests: XCTestCase {
         }
     }
     
-    func testFileNotFoundError() {
-        let error = GeminiError.fileNotFound("/path/to/file")
+    func testFileError() {
+        let error = GeminiError.fileError("File not found: /path/to/file")
         
-        if case .fileNotFound(let path) = error {
-            XCTAssertEqual(path, "/path/to/file")
+        if case .fileError(let message) = error {
+            XCTAssertEqual(message, "File not found: /path/to/file")
         } else {
-            XCTFail("Expected fileNotFound error")
+            XCTFail("Expected fileError")
         }
     }
     
-    func testFunctionExecutionFailedError() {
-        let underlyingError = NSError(domain: "test", code: -1, userInfo: nil)
-        let error = GeminiError.functionExecutionFailed("myFunction", underlyingError)
+    func testStreamingError() {
+        let error = GeminiError.streamingError("Stream interrupted")
         
-        if case .functionExecutionFailed(let name, let err) = error {
-            XCTAssertEqual(name, "myFunction")
-            XCTAssertEqual((err as NSError).domain, "test")
+        if case .streamingError(let message) = error {
+            XCTAssertEqual(message, "Stream interrupted")
         } else {
-            XCTFail("Expected functionExecutionFailed error")
+            XCTFail("Expected streamingError")
         }
     }
     
-    func testInvalidFunctionResponseError() {
-        let error = GeminiError.invalidFunctionResponse
+    func testUnsupportedPlatformError() {
+        let error = GeminiError.unsupportedPlatform("Linux streaming")
         
-        if case .invalidFunctionResponse = error {
-            // Success
+        if case .unsupportedPlatform(let message) = error {
+            XCTAssertEqual(message, "Linux streaming")
         } else {
-            XCTFail("Expected invalidFunctionResponse error")
+            XCTFail("Expected unsupportedPlatform error")
         }
     }
     
-    func testUnsupportedFeatureError() {
-        let error = GeminiError.unsupportedFeature("Streaming on Linux")
-        
-        if case .unsupportedFeature(let feature) = error {
-            XCTAssertEqual(feature, "Streaming on Linux")
-        } else {
-            XCTFail("Expected unsupportedFeature error")
-        }
-    }
+    // Removed testUnsupportedFeatureError as it doesn't exist in GeminiError
     
     func testErrorLocalizedDescription() {
         let errors: [(GeminiError, String)] = [
             (.invalidRequest("Bad input"), "Invalid request: Bad input"),
-            (.unauthorized, "Unauthorized: Invalid or missing API key"),
+            (.invalidAPIKey, "Invalid API key provided"),
             (.rateLimitExceeded, "Rate limit exceeded"),
-            (.modelNotFound, "Model not found"),
+            (.timeout, "Request timed out"),
             (.apiError(code: 404, message: "Not found", details: nil), "API error 404: Not found"),
-            (.decodingError("Bad JSON"), "Decoding error: Bad JSON"),
+            (.invalidResponse("Bad JSON"), "Invalid response: Bad JSON"),
             (.invalidConfiguration("No key"), "Invalid configuration: No key"),
-            (.fileNotFound("/tmp/file"), "File not found: /tmp/file"),
-            (.invalidFunctionResponse, "Invalid function response"),
-            (.unsupportedFeature("Feature X"), "Unsupported feature: Feature X")
+            (.fileError("/tmp/file"), "File error: /tmp/file"),
+            (.streamingError("Error"), "Streaming error: Error"),
+            (.unsupportedPlatform("Platform X"), "Unsupported platform: Platform X")
         ]
         
         for (error, expectedDescription) in errors {

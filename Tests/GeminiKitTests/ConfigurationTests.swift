@@ -8,9 +8,9 @@ final class ConfigurationTests: XCTestCase {
         let config = GeminiConfiguration(apiKey: apiKey)
         
         XCTAssertEqual(config.apiKey, apiKey)
-        XCTAssertEqual(config.baseURL, "https://generativelanguage.googleapis.com/v1beta")
-        XCTAssertEqual(config.uploadBaseURL, "https://generativelanguage.googleapis.com/upload/v1beta")
-        XCTAssertEqual(config.openAIBaseURL, "https://generativelanguage.googleapis.com/v1beta/openai")
+        XCTAssertEqual(config.baseURL.absoluteString, "https://generativelanguage.googleapis.com/v1beta")
+        XCTAssertEqual(config.uploadBaseURL.absoluteString, "https://generativelanguage.googleapis.com/upload/v1beta")
+        XCTAssertEqual(config.openAIBaseURL.absoluteString, "https://generativelanguage.googleapis.com/v1beta/openai")
         XCTAssertEqual(config.timeoutInterval, 60)
         XCTAssertEqual(config.maxRetries, 3)
         XCTAssertTrue(config.customHeaders.isEmpty)
@@ -19,18 +19,18 @@ final class ConfigurationTests: XCTestCase {
     func testInitializationWithCustomValues() {
         let config = GeminiConfiguration(
             apiKey: "custom-key",
-            baseURL: "https://custom.endpoint.com",
-            uploadBaseURL: "https://custom.upload.com",
-            openAIBaseURL: "https://custom.openai.com",
+            baseURL: URL(string: "https://custom.endpoint.com")!,
+            uploadBaseURL: URL(string: "https://custom.upload.com")!,
+            openAIBaseURL: URL(string: "https://custom.openai.com")!,
             timeoutInterval: 120,
             maxRetries: 5,
             customHeaders: ["X-Custom": "value"]
         )
         
         XCTAssertEqual(config.apiKey, "custom-key")
-        XCTAssertEqual(config.baseURL, "https://custom.endpoint.com")
-        XCTAssertEqual(config.uploadBaseURL, "https://custom.upload.com")
-        XCTAssertEqual(config.openAIBaseURL, "https://custom.openai.com")
+        XCTAssertEqual(config.baseURL.absoluteString, "https://custom.endpoint.com")
+        XCTAssertEqual(config.uploadBaseURL.absoluteString, "https://custom.upload.com")
+        XCTAssertEqual(config.openAIBaseURL.absoluteString, "https://custom.openai.com")
         XCTAssertEqual(config.timeoutInterval, 120)
         XCTAssertEqual(config.maxRetries, 5)
         XCTAssertEqual(config.customHeaders["X-Custom"], "value")
@@ -45,7 +45,7 @@ final class ConfigurationTests: XCTestCase {
         
         XCTAssertNotNil(config)
         XCTAssertEqual(config?.apiKey, "env-api-key")
-        XCTAssertEqual(config?.baseURL, "https://env.endpoint.com")
+        XCTAssertEqual(config?.baseURL.absoluteString, "https://env.endpoint.com")
         
         // Clean up
         unsetenv("GEMINI_API_KEY")
@@ -63,9 +63,9 @@ final class ConfigurationTests: XCTestCase {
     
     func testDefaultHeaders() {
         let config = GeminiConfiguration(apiKey: "test-key")
-        let headers = config.defaultHeaders
+        let headers = config.standardHeaders
         
         XCTAssertEqual(headers["x-goog-api-key"], "test-key")
-        XCTAssertTrue(headers["User-Agent"]?.contains("GeminiKit") ?? false)
+        XCTAssertEqual(headers["Content-Type"], "application/json")
     }
 }

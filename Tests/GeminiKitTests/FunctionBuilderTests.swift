@@ -12,7 +12,7 @@ final class FunctionBuilderTests: XCTestCase {
         
         XCTAssertEqual(function.name, "get_weather")
         XCTAssertEqual(function.description, "Get weather information")
-        XCTAssertTrue(function.parameters.properties?.isEmpty ?? true)
+        XCTAssertTrue(function.parameters.properties.isEmpty)
         XCTAssertTrue(function.parameters.required?.isEmpty ?? true)
     }
     
@@ -27,8 +27,8 @@ final class FunctionBuilderTests: XCTestCase {
         XCTAssertEqual(function.name, "greet")
         XCTAssertEqual(function.parameters.type, "object")
         
-        if let properties = function.parameters.properties,
-           let nameParam = properties["name"] {
+        let properties = function.parameters.properties
+        if let nameParam = properties["name"] {
             XCTAssertEqual(nameParam.type, "string")
             XCTAssertEqual(nameParam.description, "Person's name")
         } else {
@@ -51,8 +51,8 @@ final class FunctionBuilderTests: XCTestCase {
         )
         .build()
         
-        if let properties = function.parameters.properties,
-           let modeParam = properties["mode"] {
+        let properties = function.parameters.properties
+        if let modeParam = properties["mode"] {
             XCTAssertEqual(modeParam.type, "string")
             XCTAssertEqual(modeParam.enum, ["fast", "normal", "slow"])
         } else {
@@ -71,10 +71,7 @@ final class FunctionBuilderTests: XCTestCase {
         .addBoolean("active", description: "Is active", required: false)
         .build()
         
-        guard let properties = function.parameters.properties else {
-            XCTFail("Expected properties")
-            return
-        }
+        let properties = function.parameters.properties
         
         XCTAssertEqual(properties["name"]?.type, "string")
         XCTAssertEqual(properties["count"]?.type, "integer")
@@ -97,8 +94,8 @@ final class FunctionBuilderTests: XCTestCase {
         )
         .build()
         
-        if let properties = function.parameters.properties,
-           let itemsParam = properties["items"] {
+        let properties = function.parameters.properties
+        if let itemsParam = properties["items"] {
             XCTAssertEqual(itemsParam.type, "array")
             if case .array(_, let items) = itemsParam,
                case .string = items {

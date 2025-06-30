@@ -171,6 +171,23 @@ public indirect enum ParameterProperty: Codable, Equatable, Sendable {
         }
     }
     
+    public var description: String? {
+        switch self {
+        case .string(let desc, _), .number(let desc), .integer(let desc), 
+             .boolean(let desc), .array(let desc, _), .object(let desc, _, _):
+            return desc
+        }
+    }
+    
+    public var `enum`: [String]? {
+        switch self {
+        case .string(_, let enumValues):
+            return enumValues
+        default:
+            return nil
+        }
+    }
+    
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let type = try container.decode(String.self, forKey: .type)

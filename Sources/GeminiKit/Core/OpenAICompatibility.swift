@@ -392,7 +392,8 @@ extension GeminiKit {
     
     private func convertParameters(_ params: [String: AnyCodable]?) -> [String: ParameterProperty] {
         guard let params = params,
-              let properties = params["properties"] as? [String: Any] else {
+              let propertiesValue = params["properties"],
+              let properties = propertiesValue.value as? [String: Any] else {
             return [:]
         }
         

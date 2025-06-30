@@ -26,7 +26,7 @@ public protocol HTTPClient: Sendable {
 }
 
 /// HTTP response for non-URLSession implementations
-public final class HTTPURLResponse: URLResponse {
+public final class HTTPURLResponse: URLResponse, @unchecked Sendable {
     public let statusCode: Int
     public let headers: [String: String]
     

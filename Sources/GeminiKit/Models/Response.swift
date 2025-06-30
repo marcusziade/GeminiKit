@@ -70,6 +70,23 @@ public enum HarmProbability: String, Codable, Equatable, Sendable {
     case high = "HIGH"
 }
 
+/// Prompt feedback when a prompt is blocked
+public struct PromptFeedback: Codable, Equatable, Sendable {
+    /// The reason the prompt was blocked
+    public let blockReason: BlockReason?
+    
+    /// Safety ratings for the prompt
+    public let safetyRatings: [SafetyRating]?
+}
+
+/// Block reason for prompt feedback
+public enum BlockReason: String, Codable, Equatable, Sendable {
+    case safety = "SAFETY"
+    case other = "OTHER"
+    case blocklist = "BLOCKLIST"
+    case prohibitedContent = "PROHIBITED_CONTENT"
+}
+
 /// Citation metadata
 public struct CitationMetadata: Codable, Equatable, Sendable {
     /// Citation sources
