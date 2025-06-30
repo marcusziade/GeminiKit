@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  gemini-cli:
+    build: .
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./output:/output
+    working_dir: /output
+    command: ["--help"]
+
+  # Example service for running tests
+  test:
+    build: .
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    command: ["generate", "Hello, world!"]
+    profiles:
+      - test
+
+  # Example service for chat mode
+  chat:
+    build: .
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    stdin_open: true
+    tty: true
+    command: ["chat"]
+    profiles:
+      - chat
