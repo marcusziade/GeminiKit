@@ -1,6 +1,59 @@
 import Foundation
 
-/// A chat session for conversational interactions
+/// A stateful chat session for multi-turn conversations with Gemini models.
+///
+/// `Chat` maintains conversation history and context across multiple exchanges,
+/// making it ideal for building conversational interfaces, chatbots, and interactive
+/// assistants. Each message and response is automatically tracked in the session history.
+///
+/// ## Topics
+///
+/// ### Creating a Chat Session
+///
+/// - ``init(gemini:model:systemInstruction:config:tools:history:)``
+///
+/// ### Sending Messages
+///
+/// - ``sendMessage(_:)``
+/// - ``sendMessageWithContent(_:)``
+///
+/// ### Streaming Responses
+///
+/// - ``streamMessage(_:)``
+/// - ``streamMessageWithContent(_:)``
+///
+/// ### Managing History
+///
+/// - ``messages``
+/// - ``clearHistory()``
+/// - ``rewindToTurn(_:)``
+///
+/// ## Example
+///
+/// ```swift
+/// // Create a chat session
+/// let chat = gemini.startChat(
+///     model: .gemini25Pro,
+///     systemInstruction: "You are a helpful coding assistant"
+/// )
+///
+/// // Send messages
+/// let response1 = try await chat.sendMessage("What is Swift?")
+/// let response2 = try await chat.sendMessage("Show me an example")
+///
+/// // Stream responses
+/// for try await chunk in chat.streamMessage("Explain in detail") {
+///     print(chunk, terminator: "")
+/// }
+///
+/// // Access history
+/// print("Conversation turns: \(chat.messages.count)")
+/// ```
+///
+/// ## Threading
+///
+/// Chat sessions are thread-safe and can be used from multiple threads. However,
+/// messages are processed sequentially to maintain conversation order.
 public final class Chat: @unchecked Sendable {
     internal let gemini: GeminiKit
     internal let model: GeminiModel
@@ -9,19 +62,42 @@ public final class Chat: @unchecked Sendable {
     internal let config: GenerationConfig?
     internal let tools: [Tool]?
     
-    /// The conversation history
+    /// The complete conversation history.
+    ///
+    /// Contains all messages exchanged in this chat session, including both user
+    /// messages and model responses. Messages are ordered chronologically from
+    /// oldest to newest.
+    ///
+    /// - Note: System instructions are not included in the visible history
     public var messages: [Content] {
         history
     }
     
-    /// Creates a new chat session
+    /// Creates a new chat session with specified configuration.
+    ///
+    /// While you can create a chat directly, it's typically easier to use
+    /// ``GeminiKit/startChat(model:systemInstruction:history:generationConfig:safetySettings:tools:toolConfig:)``
+    /// which handles the setup for you.
+    ///
     /// - Parameters:
-    ///   - gemini: The GeminiKit instance
-    ///   - model: The model to use
-    ///   - systemInstruction: Optional system instruction
-    ///   - config: Optional generation configuration
-    ///   - tools: Optional tools available to the model
-    ///   - history: Optional initial conversation history
+    ///   - gemini: The GeminiKit instance to use for API calls
+    ///   - model: The Gemini model to use for this conversation
+    ///   - systemInstruction: Optional instructions that guide the model's behavior throughout the conversation
+    ///   - config: Optional generation configuration for response parameters
+    ///   - tools: Optional function declarations available to the model
+    ///   - history: Optional pre-existing conversation history to continue from
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let chat = Chat(
+    ///     gemini: geminiClient,
+    ///     model: .gemini25Flash,
+    ///     systemInstruction: "You are an expert in Swift programming",
+    ///     config: GenerationConfig(temperature: 0.7),
+    ///     history: previousConversation
+    /// )
+    /// ```
     public init(
         gemini: GeminiKit,
         model: GeminiModel,
@@ -38,9 +114,27 @@ public final class Chat: @unchecked Sendable {
         self.history = history
     }
     
-    /// Sends a message and gets a response
-    /// - Parameter message: The message to send
-    /// - Returns: The model's response
+    /// Sends a text message and returns the model's response.
+    ///
+    /// This is the primary method for interacting with the chat session. The message
+    /// is added to the conversation history along with the model's response.
+    ///
+    /// - Parameter message: The text message to send
+    /// - Returns: The model's text response
+    /// - Throws: ``GeminiError`` if the request fails
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// do {
+    ///     let response = try await chat.sendMessage("Explain async/await")
+    ///     print(response)
+    /// } catch {
+    ///     print("Chat error: \(error)")
+    /// }
+    /// ```
+    ///
+    /// - Note: The response is automatically added to the conversation history
     @discardableResult
     public func sendMessage(_ message: String) async throws -> String {
         let userContent = Content.user(message)
