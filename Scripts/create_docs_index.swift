@@ -647,6 +647,27 @@ let indexHTML = """
                     &nbsp;&nbsp;)<br>
                     )
                 </div>
+                
+                <div class="code-example">
+                    <span class="comment">// Video Generation (Paid)</span><br>
+                    <span class="keyword">let</span> videoOp = <span class="keyword">try await</span> gemini.<span class="function">generateVideos</span>(<br>
+                    &nbsp;&nbsp;model: .<span class="function">veo_2_0_generate</span>,<br>
+                    &nbsp;&nbsp;prompt: <span class="string">"Sunset timelapse"</span>,<br>
+                    &nbsp;&nbsp;duration: .<span class="function">seconds_8</span>,<br>
+                    &nbsp;&nbsp;aspectRatio: .<span class="function">landscape_16_9</span><br>
+                    )
+                </div>
+                
+                <div class="code-example">
+                    <span class="comment">// Video Analysis</span><br>
+                    <span class="keyword">let</span> analysis = <span class="keyword">try await</span> gemini.<span class="function">generateContent</span>(<br>
+                    &nbsp;&nbsp;model: .<span class="function">gemini_2_5_flash</span>,<br>
+                    &nbsp;&nbsp;messages: [<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;.<span class="function">user</span>(<span class="string">"Analyze this video"</span>,<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.<span class="function">videoFile</span>(<span class="string">"video.mp4"</span>))<br>
+                    &nbsp;&nbsp;]<br>
+                    )
+                </div>
             </div>
         </div>
     </section>
