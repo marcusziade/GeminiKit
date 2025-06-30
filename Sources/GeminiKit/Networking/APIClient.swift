@@ -157,9 +157,21 @@ public final class APIClient: @unchecked Sendable {
         // Transform to response stream with proper SSE parsing
         return AsyncThrowingStream { continuation in
             Task {
-                var buffer = ""
-                
                 do {
+                    #if os(Linux)
+                    // On Linux, CURLHTTPClient already parses SSE and yields JSON data
+                    for try await data in dataStream {
+                        do {
+                            let response = try self.decoder.decode(Response.self, from: data)
+                            continuation.yield(response)
+                        } catch {
+                            // Skip malformed chunks silently
+                        }
+                    }
+                    #else
+                    // For non-Linux platforms, we need to parse SSE format
+                    var buffer = ""
+                    
                     for try await data in dataStream {
                         // Append new data to buffer
                         guard let text = String(data: data, encoding: .utf8) else {
@@ -192,28 +204,41 @@ public final class APIClient: @unchecked Sendable {
                             // Try to decode the complete event data
                             if !eventData.isEmpty, let jsonBytes = eventData.data(using: .utf8) {
                                 do {
-                                    // Debug: print what we're decoding
-                                    if ProcessInfo.processInfo.environment["GEMINI_DEBUG"] != nil {
-                                        print("DEBUG: Decoding JSON: \(eventData)")
-                                    }
                                     let response = try self.decoder.decode(Response.self, from: jsonBytes)
                                     continuation.yield(response)
                                 } catch {
-                                    // Log decode errors but continue processing
-                                    if ProcessInfo.processInfo.environment["GEMINI_DEBUG"] != nil {
-                                        print("Failed to decode event: \(error)\nData: \(eventData)")
-                                    }
+                                    // Skip malformed events silently
                                 }
                             }
                         }
                     }
                     
-                    // Process any remaining data in buffer
+                    // Process any remaining data in buffer as a final event
                     if !buffer.isEmpty && buffer.trimmingCharacters(in: .whitespacesAndNewlines) != "" {
-                        if ProcessInfo.processInfo.environment["GEMINI_DEBUG"] != nil {
-                            print("DEBUG: Remaining buffer data: \(buffer)")
+                        // Process the remaining buffer as if it were a complete event
+                        var eventData = ""
+                        let lines = buffer.split(separator: "\n", omittingEmptySubsequences: false)
+                        
+                        for line in lines {
+                            if line.hasPrefix("data: ") {
+                                let lineData = String(line.dropFirst(6))
+                                if lineData != "[DONE]" {
+                                    eventData += lineData
+                                }
+                            }
+                        }
+                        
+                        // Try to decode the remaining event data
+                        if !eventData.isEmpty, let jsonBytes = eventData.data(using: .utf8) {
+                            do {
+                                let response = try self.decoder.decode(Response.self, from: jsonBytes)
+                                continuation.yield(response)
+                            } catch {
+                                // Skip malformed final event silently
+                            }
                         }
                     }
+                    #endif
                     
                     continuation.finish()
                 } catch {
