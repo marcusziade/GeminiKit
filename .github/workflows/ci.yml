@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ master ]
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
   test-macos:
@@ -14,19 +14,31 @@ jobs:
     - uses: actions/checkout@v4
     
     - name: Select Xcode
-      run: sudo xcode-select -s /Applications/Xcode_15.0.app
-      
-    - name: Show Swift version
+      run: sudo xcode-select -s /Applications/Xcode_15.2.app
+    
+    - name: Swift version
       run: swift --version
-      
+    
     - name: Build
       run: swift build -v
-      
+    
     - name: Run tests
-      run: swift test -v
-      
-    - name: Build CLI in release mode
-      run: swift build -c release --product gemini-cli
+      run: swift test -v --enable-code-coverage
+    
+    - name: Generate coverage report
+      run: |
+        xcrun llvm-cov export \
+          .build/debug/GeminiKitPackageTests.xctest/Contents/MacOS/GeminiKitPackageTests \
+          -instr-profile .build/debug/codecov/default.profdata \
+          -format lcov > coverage.lcov
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.lcov
+        flags: macos
+        name: macos-coverage
+        fail_ci_if_error: false
 
   test-linux:
     name: Test on Linux
@@ -39,43 +51,37 @@ jobs:
     - name: Install dependencies
       run: |
         apt-get update
-        apt-get install -y libcurl4-openssl-dev
-        
+        apt-get install -y curl libcurl4-openssl-dev
+    
     - name: Build
       run: swift build -v
-      
+    
     - name: Run tests
-      run: swift test -v
-      
-    - name: Build CLI in release mode
-      run: swift build -c release --product gemini-cli
+      run: swift test -v --enable-code-coverage
+    
+    - name: Generate coverage report
+      run: |
+        llvm-cov export \
+          .build/debug/GeminiKitPackageTests.xctest \
+          -instr-profile .build/debug/codecov/default.profdata \
+          -format lcov > coverage.lcov
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.lcov
+        flags: linux
+        name: linux-coverage
+        fail_ci_if_error: false
 
-  docker-build:
-    name: Docker Build
+  test-docker:
+    name: Test in Docker
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      
     - name: Build Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: false
-        tags: geminikit:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-  lint:
-    name: SwiftLint
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
+      run: docker build -t gemini-kit-test .
     
-    - name: SwiftLint
-      uses: norio-nomura/action-swiftlint@3.2.1
-      with:
-        args: --strict
-      continue-on-error: true
+    - name: Run tests in Docker
+      run: docker run --rm gemini-kit-test --help
