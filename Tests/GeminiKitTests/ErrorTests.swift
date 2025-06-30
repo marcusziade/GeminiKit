@@ -124,13 +124,13 @@ final class ErrorTests: XCTestCase {
     func testErrorLocalizedDescription() {
         let errors: [(GeminiError, String)] = [
             (.invalidRequest("Bad input"), "Invalid request: Bad input"),
-            (.invalidAPIKey, "Invalid API key provided"),
-            (.rateLimitExceeded, "Rate limit exceeded"),
-            (.timeout, "Request timed out"),
+            (.invalidAPIKey, "Invalid API key provided. The API key is either missing, malformed, or has been revoked."),
+            (.rateLimitExceeded, "Rate limit exceeded. Too many requests in a short time period."),
+            (.timeout, "Request timed out. The server did not respond within the timeout period."),
             (.apiError(code: 404, message: "Not found", details: nil), "API error 404: Not found"),
-            (.invalidResponse("Bad JSON"), "Invalid response: Bad JSON"),
+            (.invalidResponse("Bad JSON"), "Invalid response from server: Bad JSON"),
             (.invalidConfiguration("No key"), "Invalid configuration: No key"),
-            (.fileError("/tmp/file"), "File error: /tmp/file"),
+            (.fileError("/tmp/file"), "File operation error: /tmp/file"),
             (.streamingError("Error"), "Streaming error: Error"),
             (.unsupportedPlatform("Platform X"), "Unsupported platform: Platform X")
         ]
