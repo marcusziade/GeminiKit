@@ -110,6 +110,23 @@ public final class CURLHTTPClient: HTTPClient, @unchecked Sendable {
                             
                             // Keep remaining partial data in buffer
                             buffer = remainingText.data(using: .utf8) ?? Data()
+                            
+                            // If no standard SSE events found, try compact format
+                            if buffer.count > 0 && remainingText.hasPrefix("data: ") {
+                                // Handle compact SSE format where events are back-to-back
+                                let chunks = remainingText.components(separatedBy: "data: ").filter { !$0.isEmpty }
+                                for chunk in chunks {
+                                    let trimmedChunk = chunk.trimmingCharacters(in: .whitespacesAndNewlines)
+                                    if trimmedChunk == "[DONE]" {
+                                        await finishHandler.finish(continuation: continuation, status: 0)
+                                        return
+                                    }
+                                    if let data = trimmedChunk.data(using: .utf8) {
+                                        continuation.yield(data)
+                                    }
+                                }
+                                buffer = Data()
+                            }
                         }
                     }
                     

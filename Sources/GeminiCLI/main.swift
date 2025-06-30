@@ -29,9 +29,23 @@ struct GeminiCLI: AsyncParsableCommand {
     )
 }
 
-// Use Task to run async code on Linux
+// Run the async command and wait for completion
+let semaphore = DispatchSemaphore(value: 0)
+
 Task {
-    await GeminiCLI.main()
-    exit(0)
+    do {
+        await GeminiCLI.main()
+        semaphore.signal()
+    } catch {
+        // Print error to stderr to ensure it's visible
+        fputs("Error: \(error.localizedDescription)\n", stderr)
+        if let geminiError = error as? GeminiError {
+            fputs("Details: \(geminiError)\n", stderr)
+        }
+        semaphore.signal()
+        exit(1)
+    }
 }
-RunLoop.main.run()
+
+semaphore.wait()
+exit(0)

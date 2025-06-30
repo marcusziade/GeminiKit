@@ -22,20 +22,43 @@ struct StreamCommand: CLICommand, StreamableCommand {
     func execute(with gemini: GeminiKit) async throws {
         let model = try options.getModel()
         
-        let stream = try await gemini.streamGenerateContent(
-            model: model,
-            prompt: prompt,
-            systemInstruction: system
-        )
+        let stream: AsyncThrowingStream<GenerateContentResponse, Error>
+        do {
+            stream = try await gemini.streamGenerateContent(
+                model: model,
+                prompt: prompt,
+                systemInstruction: system
+            )
+        } catch {
+            throw error
+        }
         
         var receivedContent = false
-        for try await response in stream {
-            if let text = response.candidates?.first?.content.parts.first {
-                if case .text(let content) = text {
-                    handleStreamChunk(content)
-                    receivedContent = true
+        var responseCount = 0
+        var lastContent = ""
+        
+        do {
+            for try await response in stream {
+                responseCount += 1
+                
+                if let text = response.candidates?.first?.content.parts.first {
+                    if case .text(let content) = text {
+                        // Only print the new content (delta)
+                        if content.hasPrefix(lastContent) {
+                            let newContent = String(content.dropFirst(lastContent.count))
+                            handleStreamChunk(newContent)
+                            lastContent = content
+                        } else {
+                            // Full content if not incremental
+                            handleStreamChunk(content)
+                            lastContent = content
+                        }
+                        receivedContent = true
+                    }
                 }
             }
+        } catch {
+            throw error
         }
         
         if receivedContent {

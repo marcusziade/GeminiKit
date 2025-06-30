@@ -189,6 +189,16 @@ public final class APIClient: @unchecked Sendable {
                             let response = try self.decoder.decode(Response.self, from: data)
                             continuation.yield(response)
                         } catch {
+                            // Try to decode as error response
+                            if let errorResponse = try? self.decoder.decode(ErrorResponse.self, from: data) {
+                                let geminiError = GeminiError.apiError(
+                                    code: errorResponse.error.code ?? 0,
+                                    message: errorResponse.error.message,
+                                    details: errorResponse.error.details?.description
+                                )
+                                continuation.finish(throwing: geminiError)
+                                return
+                            }
                             // Skip malformed chunks silently
                         }
                     }
@@ -203,7 +213,35 @@ public final class APIClient: @unchecked Sendable {
                         }
                         buffer += text
                         
-                        // Process complete events (separated by double newlines)
+                        
+                        // Process events as they arrive - look for complete JSON objects
+                        while let dataStart = buffer.range(of: "data: "),
+                              let jsonStart = buffer.range(of: "{", range: dataStart.upperBound..<buffer.endIndex),
+                              let jsonEnd = self.findMatchingBrace(in: buffer, startingAt: jsonStart.lowerBound) {
+                            
+                            // Extract the complete JSON object
+                            let jsonData = String(buffer[jsonStart.lowerBound...jsonEnd])
+                            
+                            // Remove processed data from buffer
+                            buffer.removeSubrange(buffer.startIndex...jsonEnd)
+                            
+                            // Skip any trailing whitespace or newlines
+                            while !buffer.isEmpty && (buffer.first == "\n" || buffer.first == " ") {
+                                buffer.removeFirst()
+                            }
+                            
+                            if let data = jsonData.data(using: .utf8) {
+                                do {
+                                    let response = try self.decoder.decode(Response.self, from: data)
+                                    continuation.yield(response)
+                                } catch {
+                                    // Skip malformed JSON
+                                }
+                            }
+                        }
+                        
+                        // Process complete events - handle both standard SSE (with \n\n) and compact format
+                        // First try standard SSE format
                         while let eventRange = buffer.range(of: "\n\n") {
                             let eventText = String(buffer[..<eventRange.lowerBound])
                             buffer.removeSubrange(..<eventRange.upperBound)
@@ -231,11 +269,22 @@ public final class APIClient: @unchecked Sendable {
                                     let response = try self.decoder.decode(Response.self, from: jsonBytes)
                                     continuation.yield(response)
                                 } catch {
+                                    // Try to decode as error response
+                                    if let errorResponse = try? self.decoder.decode(ErrorResponse.self, from: jsonBytes) {
+                                        let geminiError = GeminiError.apiError(
+                                            code: errorResponse.error.code ?? 0,
+                                            message: errorResponse.error.message,
+                                            details: errorResponse.error.details?.description
+                                        )
+                                        continuation.finish(throwing: geminiError)
+                                        return
+                                    }
                                     // Skip malformed events silently
                                 }
                             }
                         }
                     }
+                    
                     
                     // Process any remaining data in buffer as a final event
                     if !buffer.isEmpty && buffer.trimmingCharacters(in: .whitespacesAndNewlines) != "" {
@@ -258,6 +307,16 @@ public final class APIClient: @unchecked Sendable {
                                 let response = try self.decoder.decode(Response.self, from: jsonBytes)
                                 continuation.yield(response)
                             } catch {
+                                // Try to decode as error response
+                                if let errorResponse = try? self.decoder.decode(ErrorResponse.self, from: jsonBytes) {
+                                    let geminiError = GeminiError.apiError(
+                                        code: errorResponse.error.code ?? 0,
+                                        message: errorResponse.error.message,
+                                        details: errorResponse.error.details?.description
+                                    )
+                                    continuation.finish(throwing: geminiError)
+                                    return
+                                }
                                 // Skip malformed final event silently
                             }
                         }
@@ -302,9 +361,22 @@ public final class APIClient: @unchecked Sendable {
         let (_, response) = try await httpClient.data(for: initRequest)
         
         // Get upload URL from response headers
-        guard let httpResponse = response as? HTTPURLResponse,
-              let uploadURLString = httpResponse.headers["X-Goog-Upload-URL"],
-              let uploadURL = URL(string: uploadURLString) else {
+        var uploadURLString: String?
+        
+        #if os(Linux)
+        if let httpResponse = response as? HTTPURLResponse {
+            uploadURLString = httpResponse.headers["X-Goog-Upload-URL"]
+        }
+        #else
+        if let httpResponse = response as? Foundation.HTTPURLResponse {
+            if let headers = httpResponse.allHeaderFields as? [String: String] {
+                uploadURLString = headers["X-Goog-Upload-URL"]
+            }
+        }
+        #endif
+        
+        guard let urlString = uploadURLString,
+              let uploadURL = URL(string: urlString) else {
             throw GeminiError.fileError("Failed to get upload URL")
         }
         
@@ -314,7 +386,7 @@ public final class APIClient: @unchecked Sendable {
         
         // Set continuation headers
         let continuationHeaders = configuration.uploadContinuationHeaders(
-            uploadURL: uploadURLString,
+            uploadURL: urlString,
             offset: 0,
             chunkSize: fileData.count
         )
@@ -348,6 +420,42 @@ public final class APIClient: @unchecked Sendable {
         }
         
         return url
+    }
+    
+    private func findMatchingBrace(in string: String, startingAt start: String.Index) -> String.Index? {
+        var depth = 0
+        var inString = false
+        var escaped = false
+        var index = start
+        
+        while index < string.endIndex {
+            let char = string[index]
+            
+            if !escaped {
+                if char == "\"" && !inString {
+                    inString = true
+                } else if char == "\"" && inString {
+                    inString = false
+                } else if !inString {
+                    if char == "{" {
+                        depth += 1
+                    } else if char == "}" {
+                        depth -= 1
+                        if depth == 0 {
+                            return index
+                        }
+                    }
+                }
+                
+                escaped = (char == "\\")
+            } else {
+                escaped = false
+            }
+            
+            index = string.index(after: index)
+        }
+        
+        return nil
     }
 }
 
