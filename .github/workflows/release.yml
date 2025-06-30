@@ -1,0 +1,128 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+
+  build-macos:
+    name: Build macOS Binary
+    needs: create-release
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Select Xcode
+      run: sudo xcode-select -s /Applications/Xcode_15.0.app
+      
+    - name: Build Release Binary
+      run: |
+        swift build -c release --product gemini-cli
+        cp .build/release/gemini-cli gemini-cli-macos
+        
+    - name: Create Archive
+      run: |
+        tar -czf gemini-cli-macos.tar.gz gemini-cli-macos
+        
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./gemini-cli-macos.tar.gz
+        asset_name: gemini-cli-macos.tar.gz
+        asset_content_type: application/gzip
+
+  build-linux:
+    name: Build Linux Binary
+    needs: create-release
+    runs-on: ubuntu-latest
+    container:
+      image: swift:5.9-jammy
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        apt-get update
+        apt-get install -y libcurl4-openssl-dev
+        
+    - name: Build Release Binary
+      run: |
+        swift build -c release --product gemini-cli
+        cp .build/release/gemini-cli gemini-cli-linux
+        
+    - name: Create Archive
+      run: |
+        tar -czf gemini-cli-linux.tar.gz gemini-cli-linux
+        
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./gemini-cli-linux.tar.gz
+        asset_name: gemini-cli-linux.tar.gz
+        asset_content_type: application/gzip
+
+  build-docker:
+    name: Build and Push Docker Image
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+      
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: marcusziade/geminikit
+        tags: |
+          type=ref,event=tag
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
