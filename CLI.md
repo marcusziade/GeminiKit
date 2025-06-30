@@ -4,6 +4,13 @@
 
 The GeminiKit CLI (`gemini-cli`) is a command-line tool for testing and interacting with the Gemini API through the GeminiKit Swift SDK.
 
+## API Reference
+
+The implementation is based on the Gemini API reference located at:
+```
+/home/marcus/Dev/python/gemini_api_reference.json
+```
+
 ## Installation
 
 ```bash
@@ -47,7 +54,10 @@ Stream content generation in real-time.
 gemini-cli stream "Your prompt here" [options]
 ```
 
-**Status**: JSON decoding issues in current implementation
+**Known Issue**: JSON decoding error when parsing streaming chunks
+- **Problem**: The streaming response format differs from expected structure
+- **Debug**: Run with verbose output to see raw response: `gemini-cli stream "prompt" 2>&1`
+- **Workaround**: Use non-streaming `generate` command instead
 
 ### count
 Count tokens in text.
@@ -123,7 +133,10 @@ Test function calling capabilities.
 gemini-cli function-call "Task requiring function calls"
 ```
 
-**Status**: Calculator function has validation issues
+**Known Issue**: Calculator function parameter validation fails
+- **Problem**: The function calling example expects specific parameter format
+- **Debug**: The calculator only supports expressions like "2 + 2", not natural language
+- **Workaround**: Use direct arithmetic expressions or implement custom functions
 
 ### open-ai-chat
 OpenAI-compatible chat completion.
@@ -146,7 +159,10 @@ Upload a file for processing.
 gemini-cli upload <file-path>
 ```
 
-**Status**: Upload URL retrieval fails
+**Known Issue**: File upload API endpoint not accessible
+- **Problem**: The upload endpoint returns 404 or permission denied
+- **Debug**: Check API response: `gemini-cli upload file.txt 2>&1`
+- **Note**: File uploads may require additional API permissions or different endpoint
 
 #### list-files
 List uploaded files.
@@ -200,6 +216,20 @@ gemini-cli generate-speech "Hello world" -v Lyra -o speech.wav
 ```bash
 gemini-cli web-grounding "Latest Swift features"
 ```
+
+## Known Issues Summary
+
+1. **stream command**: JSON parsing errors due to SSE format differences
+2. **function-call command**: Limited to basic calculator operations
+3. **upload command**: File API endpoint access issues
+4. **chat command**: Interactive mode requires TTY (not tested in scripts)
+
+## Debugging Tips
+
+- Redirect stderr to see full error details: `command 2>&1`
+- Use `--help` on any command for detailed options
+- Check the API reference file for endpoint specifications
+- Enable verbose logging by setting `GEMINI_DEBUG=true`
 
 ## Exit Codes
 
