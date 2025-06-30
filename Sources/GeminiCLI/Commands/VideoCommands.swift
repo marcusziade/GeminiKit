@@ -6,24 +6,43 @@ import GeminiKit
 struct GenerateVideoCommand: CLICommand {
     static let configuration = CommandConfiguration(
         commandName: "generate-video",
-        abstract: "Generate videos from text"
+        abstract: "Generate videos from text",
+        discussion: """
+        Generate videos using AI from text prompts or existing images.
+        Note: Video generation requires a paid API tier.
+        
+        Examples:
+          # Text-to-video generation
+          gemini-cli generate-video "Ocean waves at sunset" --wait
+          
+          # Vertical video for social media
+          gemini-cli generate-video "Neon city lights" \\
+            --ratio 9:16 \\
+            --duration 8 \\
+            --wait
+          
+          # Image-to-video animation
+          gemini-cli generate-video "Animate this scene with gentle movement" \\
+            --image landscape.jpg \\
+            --wait
+        """
     )
     
     @OptionGroup var options: CommonOptions
     
-    @Argument(help: "The prompt for video generation")
+    @Argument(help: "The prompt describing the video to generate")
     var prompt: String
     
-    @Option(name: .shortAndLong, help: "Duration in seconds (5 or 8)")
+    @Option(name: .shortAndLong, help: "Video duration in seconds (5 or 8, default: 5)")
     var duration: Int = 5
     
-    @Option(name: .shortAndLong, help: "Aspect ratio (16:9 or 9:16)")
+    @Option(name: .shortAndLong, help: "Aspect ratio (16:9 for landscape, 9:16 for portrait, default: 16:9)")
     var ratio: String = "16:9"
     
-    @Option(help: "Image file for image-to-video")
+    @Option(help: "Path to source image for image-to-video generation")
     var image: String?
     
-    @Flag(help: "Wait for completion")
+    @Flag(help: "Wait for video generation to complete (recommended)")
     var wait = false
     
     func execute(with gemini: GeminiKit) async throws {
@@ -69,30 +88,54 @@ struct GenerateVideoCommand: CLICommand {
 struct AnalyzeVideoCommand: CLICommand {
     static let configuration = CommandConfiguration(
         commandName: "analyze-video",
-        abstract: "Analyze video content"
+        abstract: "Analyze video content",
+        discussion: """
+        Analyze video files or YouTube videos using AI to extract insights, summaries, and descriptions.
+        
+        Examples:
+          # Analyze local video file
+          gemini-cli analyze-video presentation.mp4 \\
+            --prompt "Summarize the key points"
+          
+          # Analyze YouTube video
+          gemini-cli analyze-video "https://youtu.be/VIDEO_ID" \\
+            --prompt "What are the main topics discussed?"
+          
+          # Analyze specific segment with transcription
+          gemini-cli analyze-video lecture.mp4 \\
+            --start 05:30 \\
+            --end 10:45 \\
+            --transcribe \\
+            --prompt "Extract the key concepts"
+          
+          # Frame-by-frame analysis
+          gemini-cli analyze-video action_scene.mp4 \\
+            --fps 5 \\
+            --prompt "Describe the action sequence in detail"
+        """
     )
     
     @OptionGroup var options: CommonOptions
     
-    @Argument(help: "Path to video file or YouTube URL")
+    @Argument(help: "Path to local video file or YouTube URL (e.g., https://youtu.be/VIDEO_ID)")
     var video: String
     
-    @Option(name: .shortAndLong, help: "Analysis prompt")
+    @Option(name: .shortAndLong, help: "Custom analysis prompt (default: 'Please describe this video in detail.')")
     var prompt: String = "Please describe this video in detail."
     
-    @Option(help: "System instruction")
+    @Option(help: "System instruction to guide the analysis")
     var system: String?
     
-    @Option(help: "Start time (MM:SS format)")
+    @Option(help: "Start time for analysis in MM:SS format (e.g., 01:30)")
     var start: String?
     
-    @Option(help: "End time (MM:SS format)")
+    @Option(help: "End time for analysis in MM:SS format (e.g., 05:45)")
     var end: String?
     
-    @Option(help: "Frames per second (default: 1)")
+    @Option(help: "Frames per second to analyze (default: 1, higher values for detailed frame analysis)")
     var fps: Double?
     
-    @Flag(help: "Transcribe audio and provide visual descriptions")
+    @Flag(help: "Include audio transcription with timestamps and visual descriptions")
     var transcribe = false
     
     func execute(with gemini: GeminiKit) async throws {

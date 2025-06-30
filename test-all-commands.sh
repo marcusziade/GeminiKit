@@ -1,54 +1,97 @@
 #!/bin/bash
 # Test script for all GeminiKit CLI commands
-
-API_KEY="${GEMINI_API_KEY}"
+# This script demonstrates the correct syntax for each command
 
 # Check if API key is set
-if [ -z "$API_KEY" ]; then
+if [ -z "$GEMINI_API_KEY" ]; then
     echo "Error: GEMINI_API_KEY environment variable is not set"
     echo "Please set it before running this script:"
     echo "  export GEMINI_API_KEY='your-api-key'"
     exit 1
 fi
-CLI=".build/release/gemini-cli"
+
+# Determine the correct path to the CLI binary
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    CLI=".build/x86_64-unknown-linux-gnu/release/gemini-cli"
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+    # Check for Apple Silicon or Intel
+    if [[ $(uname -m) == "arm64" ]]; then
+        CLI=".build/arm64-apple-macosx/release/gemini-cli"
+    else
+        CLI=".build/x86_64-apple-macosx/release/gemini-cli"
+    fi
+else
+    CLI=".build/release/gemini-cli"
+fi
+
+# Check if CLI exists
+if [ ! -f "$CLI" ]; then
+    echo "Error: CLI not found at $CLI"
+    echo "Please build the project first with: swift build -c release"
+    exit 1
+fi
 
 echo "Testing GeminiKit CLI Commands"
 echo "=============================="
+echo "Using CLI at: $CLI"
+echo ""
 
-# Text generation
+# 1. Text generation
 echo -e "\n1. Testing generate command..."
-$CLI generate 'Say hello' --api-key "$API_KEY"
+$CLI generate "Write a haiku about coding"
 
-# Streaming
+# 2. Streaming
 echo -e "\n2. Testing stream command..."
-$CLI stream 'Count to 3' --api-key "$API_KEY"
+$CLI stream "Count from 1 to 5 slowly"
 
-# Token counting
+# 3. Token counting
 echo -e "\n3. Testing count command..."
-$CLI count 'Hello world' --api-key "$API_KEY"
+$CLI count "The quick brown fox jumps over the lazy dog"
 
-# Embeddings
-echo -e "\n4. Testing embeddings command..."
-$CLI embeddings 'Test text' --api-key "$API_KEY" | head -2
+# 4. Interactive chat (simulated with echo)
+echo -e "\n4. Testing chat command..."
+echo -e "What is the capital of France?\nexit" | $CLI chat
 
-# Code execution
-echo -e "\n5. Testing code-execution command..."
-$CLI code-execution 'Write a function to add two numbers' --api-key "$API_KEY" | head -10
+# 5. Embeddings
+echo -e "\n5. Testing embeddings command..."
+$CLI embeddings "Machine learning is transforming technology" | head -3
 
-# Web grounding
-echo -e "\n6. Testing web-grounding command..."
-$CLI web-grounding 'Current weather' --api-key "$API_KEY" | head -5
+# 6. Code execution
+echo -e "\n6. Testing code-execution command..."
+$CLI code-execution "Write a Python function to calculate the factorial of a number"
 
-# Function calling
-echo -e "\n7. Testing function-call command..."
-$CLI function-call 'Calculate 15 plus 25' --api-key "$API_KEY"
+# 7. Web grounding
+echo -e "\n7. Testing web-grounding command..."
+$CLI web-grounding "What are the latest AI developments in 2024?" | head -10
 
-# OpenAI chat
-echo -e "\n8. Testing open-ai-chat command..."
-$CLI open-ai-chat 'Hello' --api-key "$API_KEY"
+# 8. Function calling
+echo -e "\n8. Testing function-call command..."
+$CLI function-call "What's the weather in Tokyo and calculate 25 times 4"
 
-# Config info
-echo -e "\n9. Testing config-info command..."
-$CLI config-info --api-key "$API_KEY" | head -10
+# 9. Image generation
+echo -e "\n9. Testing generate-image command..."
+$CLI generate-image "A serene mountain landscape at sunset" --output /tmp
+
+# 10. Speech generation
+echo -e "\n10. Testing generate-speech command..."
+$CLI generate-speech "Hello, welcome to GeminiKit CLI" --output /tmp/welcome.wav
+
+# 11. Video analysis (using YouTube URL)
+echo -e "\n11. Testing analyze-video command..."
+$CLI analyze-video "https://youtu.be/dQw4w9WgXcQ" --prompt "What is this video about?" | head -10
+
+# 12. List files
+echo -e "\n12. Testing list-files command..."
+$CLI list-files
+
+# 13. OpenAI chat
+echo -e "\n13. Testing openai-chat command..."
+$CLI openai-chat "Explain recursion in one sentence"
+
+# 14. Config info
+echo -e "\n14. Testing config-info command..."
+$CLI config-info | head -15
 
 echo -e "\n✅ All commands tested successfully!"
+echo -e "\nFor more examples and options, run: $CLI --help"
+echo -e "For command-specific help, run: $CLI <command> --help"
