@@ -139,15 +139,19 @@ struct Stream: AsyncParsableCommand {
             systemInstruction: system
         )
         
+        var receivedContent = false
         for try await response in stream {
             if let text = response.candidates?.first?.content.parts.first {
                 if case .text(let content) = text {
                     print(content, terminator: "")
                     fflush(stdout)
+                    receivedContent = true
                 }
             }
         }
-        print()
+        if receivedContent {
+            print()
+        }
     }
 }
 
