@@ -170,10 +170,36 @@ public struct FunctionHandlers {
     /// Creates a simple calculator function handler
     public static func calculator() -> (String, (FunctionCall) async throws -> [String: Any]) {
         return ("calculate", { call in
-            guard let operation = call.args["operation"]?.value as? String,
-                  let a = call.args["a"]?.value as? Double,
-                  let b = call.args["b"]?.value as? Double else {
-                throw GeminiError.invalidRequest("Invalid calculator arguments")
+            guard let operation = call.args["operation"]?.value as? String else {
+                throw GeminiError.invalidRequest("Invalid calculator arguments: missing or invalid operation")
+            }
+            
+            // Handle both Int and Double types for numeric arguments
+            let a: Double
+            let b: Double
+            
+            if let aValue = call.args["a"]?.value {
+                if let doubleValue = aValue as? Double {
+                    a = doubleValue
+                } else if let intValue = aValue as? Int {
+                    a = Double(intValue)
+                } else {
+                    throw GeminiError.invalidRequest("Invalid calculator arguments: 'a' must be a number")
+                }
+            } else {
+                throw GeminiError.invalidRequest("Invalid calculator arguments: missing 'a'")
+            }
+            
+            if let bValue = call.args["b"]?.value {
+                if let doubleValue = bValue as? Double {
+                    b = doubleValue
+                } else if let intValue = bValue as? Int {
+                    b = Double(intValue)
+                } else {
+                    throw GeminiError.invalidRequest("Invalid calculator arguments: 'b' must be a number")
+                }
+            } else {
+                throw GeminiError.invalidRequest("Invalid calculator arguments: missing 'b'")
             }
             
             let result: Double
