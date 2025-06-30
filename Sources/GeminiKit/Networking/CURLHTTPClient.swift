@@ -2,8 +2,7 @@
 import Foundation
 import FoundationNetworking
 
-/// URLSession-based HTTP client for Linux (simplified for now)
-/// Note: This doesn't support true SSE streaming on Linux, but provides basic functionality
+/// URLSession-based HTTP client for Linux with SSE streaming support
 public final class CURLHTTPClient: HTTPClient, @unchecked Sendable {
     private let session: URLSession
     
@@ -27,39 +26,19 @@ public final class CURLHTTPClient: HTTPClient, @unchecked Sendable {
     }
     
     public func stream(for request: URLRequest) async throws -> AsyncThrowingStream<Data, Error> {
-        // For Linux, we'll simulate streaming by making a regular request
-        // and yielding the entire response at once
+        // Linux implementation using URLSession with delegate for streaming
         AsyncThrowingStream { continuation in
-            Task {
-                do {
-                    let (data, response) = try await self.data(for: request)
-                    
-                    // Check for SSE response
-                    if let httpResponse = response as? HTTPURLResponse,
-                       let contentType = httpResponse.headers["Content-Type"],
-                       contentType.contains("text/event-stream") {
-                        // Parse SSE data
-                        let text = String(data: data, encoding: .utf8) ?? ""
-                        let events = text.split(separator: "\n\n")
-                        
-                        for event in events {
-                            if event.hasPrefix("data: ") {
-                                let jsonData = String(event.dropFirst(6))
-                                if let data = jsonData.data(using: .utf8) {
-                                    continuation.yield(data)
-                                }
-                            }
-                        }
-                    } else {
-                        // Non-SSE response, yield entire data
-                        continuation.yield(data)
-                    }
-                    
-                    continuation.finish()
-                } catch {
-                    continuation.finish(throwing: error)
-                }
+            let delegate = StreamingDelegate(continuation: continuation)
+            let delegateSession = URLSession(configuration: .default, delegate: delegate, delegateQueue: nil)
+            
+            let task = delegateSession.dataTask(with: request)
+            
+            continuation.onTermination = { _ in
+                task.cancel()
+                delegateSession.invalidateAndCancel()
             }
+            
+            task.resume()
         }
     }
     
@@ -67,6 +46,32 @@ public final class CURLHTTPClient: HTTPClient, @unchecked Sendable {
         var uploadRequest = request
         uploadRequest.httpBody = data
         return try await self.data(for: uploadRequest)
+    }
+}
+
+/// URLSession delegate for handling streaming responses on Linux
+private final class StreamingDelegate: NSObject, URLSessionDataDelegate {
+    let continuation: AsyncThrowingStream<Data, Error>.Continuation
+    
+    init(continuation: AsyncThrowingStream<Data, Error>.Continuation) {
+        self.continuation = continuation
+        super.init()
+    }
+    
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
+        continuation.yield(data)
+    }
+    
+    func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        if let error = error {
+            continuation.finish(throwing: error)
+        } else {
+            continuation.finish()
+        }
+    }
+    
+    func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
+        completionHandler(.allow)
     }
 }
 

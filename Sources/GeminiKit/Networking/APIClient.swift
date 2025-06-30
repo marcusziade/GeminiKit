@@ -154,35 +154,67 @@ public final class APIClient: @unchecked Sendable {
         // Get stream
         let dataStream = try await httpClient.stream(for: request)
         
-        // Transform to response stream
+        // Transform to response stream with proper SSE parsing
         return AsyncThrowingStream { continuation in
             Task {
+                var buffer = ""
+                
                 do {
                     for try await data in dataStream {
-                        // Parse SSE data
-                        if let jsonString = String(data: data, encoding: .utf8) {
-                            // Handle SSE format
-                            let lines = jsonString.split(separator: "\n")
+                        // Append new data to buffer
+                        guard let text = String(data: data, encoding: .utf8) else {
+                            continue
+                        }
+                        buffer += text
+                        
+                        // Process complete events (separated by double newlines)
+                        while let eventRange = buffer.range(of: "\n\n") {
+                            let eventText = String(buffer[..<eventRange.lowerBound])
+                            buffer.removeSubrange(..<eventRange.upperBound)
+                            
+                            // Process the complete event
+                            var eventData = ""
+                            let lines = eventText.split(separator: "\n", omittingEmptySubsequences: false)
+                            
                             for line in lines {
                                 if line.hasPrefix("data: ") {
-                                    let jsonData = String(line.dropFirst(6))
-                                    if jsonData == "[DONE]" {
+                                    let lineData = String(line.dropFirst(6))
+                                    if lineData == "[DONE]" {
+                                        // Stream finished
                                         continuation.finish()
                                         return
                                     }
-                                    if let data = jsonData.data(using: .utf8) {
-                                        do {
-                                            let response = try self.decoder.decode(Response.self, from: data)
-                                            continuation.yield(response)
-                                        } catch {
-                                            // Skip malformed chunks
-                                            print("Failed to decode chunk: \(error)")
-                                        }
+                                    // SSE can have multiple data lines per event
+                                    eventData += lineData
+                                }
+                            }
+                            
+                            // Try to decode the complete event data
+                            if !eventData.isEmpty, let jsonBytes = eventData.data(using: .utf8) {
+                                do {
+                                    // Debug: print what we're decoding
+                                    if ProcessInfo.processInfo.environment["GEMINI_DEBUG"] != nil {
+                                        print("DEBUG: Decoding JSON: \(eventData)")
+                                    }
+                                    let response = try self.decoder.decode(Response.self, from: jsonBytes)
+                                    continuation.yield(response)
+                                } catch {
+                                    // Log decode errors but continue processing
+                                    if ProcessInfo.processInfo.environment["GEMINI_DEBUG"] != nil {
+                                        print("Failed to decode event: \(error)\nData: \(eventData)")
                                     }
                                 }
                             }
                         }
                     }
+                    
+                    // Process any remaining data in buffer
+                    if !buffer.isEmpty && buffer.trimmingCharacters(in: .whitespacesAndNewlines) != "" {
+                        if ProcessInfo.processInfo.environment["GEMINI_DEBUG"] != nil {
+                            print("DEBUG: Remaining buffer data: \(buffer)")
+                        }
+                    }
+                    
                     continuation.finish()
                 } catch {
                     continuation.finish(throwing: error)
