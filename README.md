@@ -3,6 +3,8 @@
 [![Swift](https://img.shields.io/badge/Swift-5.9-orange.svg)](https://swift.org)
 [![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20iOS%20%7C%20tvOS%20%7C%20watchOS%20%7C%20Linux-lightgray.svg)](https://github.com/marcusziade/GeminiKit)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CI Status](https://github.com/marcusziade/GeminiKit/workflows/CI/badge.svg)](https://github.com/marcusziade/GeminiKit/actions)
+[![Release](https://img.shields.io/github/v/release/marcusziade/GeminiKit)](https://github.com/marcusziade/GeminiKit/releases)
 
 A comprehensive Swift SDK for the Google Gemini API with full feature coverage and a powerful CLI.
 
