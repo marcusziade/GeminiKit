@@ -14,7 +14,7 @@ This guide provides comprehensive documentation for all GeminiKit CLI commands w
 ### From Source
 ```bash
 # Clone the repository
-git clone https://github.com/marcusziade/GeminiKit.git
+git clone https://github.com/guitaripod/GeminiKit.git
 cd GeminiKit
 
 # Build the CLI

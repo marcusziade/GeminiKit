@@ -22,7 +22,7 @@ Add GeminiKit to your `Package.swift` dependencies:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/marcusziade/GeminiKit", from: "1.0.0")
+    .package(url: "https://github.com/guitaripod/GeminiKit", from: "1.0.0")
 ]
 ```
 
@@ -115,6 +115,6 @@ do {
 
 If you encounter issues:
 
-- Check the [GitHub Issues](https://github.com/marcusziade/GeminiKit/issues)
+- Check the [GitHub Issues](https://github.com/guitaripod/GeminiKit/issues)
 - Review the [API Documentation](https://geminikit.dev/docs)
-- Join the [Discussions](https://github.com/marcusziade/GeminiKit/discussions)
+- Join the [Discussions](https://github.com/guitaripod/GeminiKit/discussions)

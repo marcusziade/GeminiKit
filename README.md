@@ -1,10 +1,10 @@
 # GeminiKit
 
 [![Swift](https://img.shields.io/badge/Swift-5.9-orange.svg)](https://swift.org)
-[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20iOS%20%7C%20tvOS%20%7C%20watchOS%20%7C%20Linux-lightgray.svg)](https://github.com/marcusziade/GeminiKit)
+[![Platform](https://img.shields.io/badge/Platform-macOS%20%7C%20iOS%20%7C%20tvOS%20%7C%20watchOS%20%7C%20Linux-lightgray.svg)](https://github.com/guitaripod/GeminiKit)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![CI Status](https://github.com/marcusziade/GeminiKit/workflows/CI/badge.svg)](https://github.com/marcusziade/GeminiKit/actions)
-[![Release](https://img.shields.io/github/v/release/marcusziade/GeminiKit)](https://github.com/marcusziade/GeminiKit/releases)
+[![CI Status](https://github.com/guitaripod/GeminiKit/workflows/CI/badge.svg)](https://github.com/guitaripod/GeminiKit/actions)
+[![Release](https://img.shields.io/github/v/release/guitaripod/GeminiKit)](https://github.com/guitaripod/GeminiKit/releases)
 
 A comprehensive Swift SDK for the Google Gemini API with full feature coverage and a powerful CLI.
 
@@ -22,7 +22,7 @@ A comprehensive Swift SDK for the Google Gemini API with full feature coverage a
 ### Swift Package Manager
 ```swift
 dependencies: [
-    .package(url: "https://github.com/marcusziade/GeminiKit", from: "1.0.0")
+    .package(url: "https://github.com/guitaripod/GeminiKit", from: "1.0.0")
 ]
 ```
 
@@ -34,11 +34,11 @@ cp .build/release/gemini-cli /usr/local/bin/
 
 # Or download the release binary
 # macOS:
-curl -L https://github.com/marcusziade/GeminiKit/releases/latest/download/gemini-cli-macos.tar.gz | tar xz
+curl -L https://github.com/guitaripod/GeminiKit/releases/latest/download/gemini-cli-macos.tar.gz | tar xz
 sudo mv gemini-cli-macos /usr/local/bin/gemini-cli
 
 # Linux:
-curl -L https://github.com/marcusziade/GeminiKit/releases/latest/download/gemini-cli-linux.tar.gz | tar xz
+curl -L https://github.com/guitaripod/GeminiKit/releases/latest/download/gemini-cli-linux.tar.gz | tar xz
 sudo mv gemini-cli-linux /usr/local/bin/gemini-cli
 ```
 
@@ -321,7 +321,7 @@ gemini-cli generate-image "Abstract representation of artificial intelligence" \
 
 ## Documentation
 
-- **[API Documentation](https://marcusziade.github.io/GeminiKit/documentation/geminikit/)** - Full SDK API reference (DocC)
+- **[API Documentation](https://guitaripod.github.io/GeminiKit/documentation/geminikit/)** - Full SDK API reference (DocC)
 - **[CLI Complete Guide](CLI_GUIDE.md)** - Comprehensive CLI documentation with all commands, options, and examples
 - **[CLI Quick Reference](CLI_QUICK_REFERENCE.md)** - Quick command reference card
 - **[Test Script](test-all-commands.sh)** - Example script demonstrating all CLI commands
